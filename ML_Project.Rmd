@@ -1,0 +1,71 @@
+---
+title: "Machine Learning Project"
+author: "Dinara Satayeva"
+date: "3/31/2020"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+## Overview
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. 
+
+In this project, the goal is to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. The goal of the project is to predict the manner in which they did the exercise. 
+  
+## Loading data
+```{r echo = TRUE}
+training <- read.csv("pml-training.csv", na.strings = c("NA", "#DIV/0!", ""))
+testing <- read.csv("pml-testing.csv", na.strings = c("NA", "#DIV/0!", ""))
+```
+
+## First look at the data
+```{r echo = TRUE}
+dim(training)
+dim(testing)
+
+head(training)
+```
+
+## Cleaning data
+```{r echo=TRUE, cache=TRUE}
+training <- training[, which(colSums(is.na(training)) == 0)] 
+testing <- testing[, which(colSums(is.na(testing)) == 0)]
+```
+
+## Cross Validation
+To perfrom cross validation I'll split training dataset into two subsets: training subset(70%) and testing subset(30%).
+```{r echo = TRUE}
+library(caret)
+library(randomForest)
+
+set.seed(333)
+inTrain = createDataPartition(y=training$classe,p=0.7, list=FALSE)
+
+training_sub = training[inTrain,]
+testing_sub = training[-inTrain,]
+```
+
+## Predicting using Recursive Partitioning and Regression Trees
+```{r, echo = TRUE}
+#building a model
+fit1 = train(classe ~ ., data = training_sub, method = "rpart")
+#predicting on our validation subset
+validation<-predict(fit1, testing_sub)
+confusionMatrix(testing_sub$classe, validation)
+```
+
+## Predicting using Random Forest
+```{r, echo = TRUE}
+#building a model
+fit2 = train(classe ~ ., data = training_sub, method = "rf", ntree = 250)
+#predicting on our validation subset
+validation<-predict(fit2, testing_sub)
+confusionMatrix(testing_sub$classe, validation)
+```
+
+## Prediction
+Random random model showed higher accuracy than the rpart model, therefore I will use it to predict observations from testing dataset.
+```{r  echo=TRUE}
+pred= predict(fit2, testing)
+pred
+```
